@@ -1,0 +1,40 @@
+.create-team-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+  }
+  
+  .create-team-heading {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .create-team-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    width: 100%;
+  }
+  
+  .create-team-input,
+  .create-team-textarea {
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    padding: 10px;
+  }
+  
+  .create-team-textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .create-team-upload-button {
+    width: 100%;
+  }
+  
+  .create-team-submit-button {
+    width: 200px;
+    align-self: flex-end;
+  }
