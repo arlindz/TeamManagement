@@ -20,6 +20,8 @@ const postRouter = require("./routes/posts.js");
 const orientationRouter = require("./routes/orientations.js");
 const teamTypesRouter = require("./routes/teamtypes.js");
 const challengesRouter = require(`./routes/challenges.js`);
+const likesRouter = require(`./routes/likes.js`);
+const commentsRouter = require(`./routes/comments.js`);
 
 app.use("/team", teamRouter);
 app.use("/authenticate", logInRouter);
@@ -32,6 +34,8 @@ app.use("/post", postRouter);
 app.use('/orientations', orientationRouter);
 app.use('/teamtypes', teamTypesRouter);
 app.use('/challenges', challengesRouter);
+app.use('/like', likesRouter);
+app.use('/comment', commentsRouter);
 
 app.use('/images', express.static(uploadDirectory));
 
