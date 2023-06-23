@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Card, Typography, Row, Col, Form, Select, InputNumber, Input, Button } from 'antd';
-import { MessageOutlined, ThunderboltOutlined, DeleteOutlined, LockOutlined, GlobalOutlined, EditOutlined, CloseOutlined, CheckOutlined } from "@ant-design/icons";
+import {
+    MessageOutlined, ThunderboltOutlined, DeleteOutlined,
+    LockOutlined, GlobalOutlined, EditOutlined, CloseOutlined,
+    CheckOutlined, LikeOutlined, DislikeOutlined, DislikeFilled, LikeFilled
+} from "@ant-design/icons";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -16,9 +20,11 @@ const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, cha
     }
     const [form] = Form.useForm();
     const [editingMode, setEditingMode] = useState(false);
-    const [postIsChallenge, setPostIsChallenge] = useState(post.PostType === "Challenges" ? true : false);
+    const [postIsChallenge, setPostIsChallenge] = useState(post.PostType == "Challenges" ? true : false);
     const [selectedDurationType, setSelectedDurationType] = useState(post.DurationType === null ? durationTypes === undefined ? "" : Object.keys(durationTypes)[0] : post.DurationType);
     const [durationLength, setDurationLength] = useState(post.DurationLength === null ? durationTypes === undefined ? "" : durationTypes[selectedDurationType][0] : post.DurationLength);
+    const [liked, setLiked] = useState(post.LikingStatus === null ? false : post.LikingStatus);
+    const [disliked, setDisliked] = useState(post.LikingStatus === null ? false : !post.LikingStatus);
     async function deletePost() {
         try {
             const response = await fetch(`http://localhost:5000/post/${post.PostId}`, {
@@ -34,6 +40,74 @@ const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, cha
             if (response.status !== 204) return;
             setPosts((prev) => {
                 return [...prev.slice(0, index), ...prev.slice(index + 1, prev.length)];
+            })
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    async function likePost() {
+        try {
+            const response = await fetch(`http://localhost:5000/like/post/${post.PostId}`, {
+                method: "POST",
+                headers: {
+                    'auth': localStorage.getItem('token'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    like: true
+                })
+            });
+            if (response.status !== 200) return;
+            const json = await response.json();
+            setLiked(json.response.length === 0 ? false : json.response[0].State);
+            setDisliked(false);
+            setPosts((prev) => {
+                const aux = prev.slice();
+                aux[index] = {
+                    ...aux[index],
+                    Likes: json.response.length === 0 ?
+                        aux[index].LikingStatus === true ?
+                            aux[index].Likes - 1 :
+                            aux[index].Likes :
+                        json.response[0].State === true ? aux[index].Likes + 1 : aux[index].Likes,
+                    Dislikes: aux[index].LikingStatus === false ? aux[index].Dislikes - 1 : aux[index].Dislikes,
+                    LikingStatus: json.response.length === 0 ? null : json.response[0].State,
+                };
+                return aux;
+            })
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    async function dislikePost() {
+        try {
+            const response = await fetch(`http://localhost:5000/like/post/${post.PostId}`, {
+                method: "POST",
+                headers: {
+                    'auth': localStorage.getItem('token'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    like: false
+                })
+            });
+            if (response.status !== 200) return;
+            const json = await response.json();
+            setLiked(false);
+            setDisliked(json.response.length === 0 ? false : !json.response[0].State);
+            setPosts((prev) => {
+                const aux = prev.slice();
+                aux[index] = {
+                    ...aux[index],
+                    Dislikes: json.response.length === 0 ?
+                        aux[index].LikingStatus === false ?
+                            aux[index].Dislikes - 1 :
+                            aux[index].Dislikes :
+                        json.response[0].State === false ? aux[index].Dislikes + 1 : aux[index].Dislikes,
+                    Likes: aux[index].LikingStatus === true ? aux[index].Likes - 1 : aux[index].Likes,
+                    LikingStatus: json.response.length === 0 ? null : json.response[0].State,
+                };
+                return aux;
             })
         } catch (error) {
             console.log(error);
@@ -225,6 +299,25 @@ const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, cha
                         </Col>
                     </Row>)
                 }
+                <Row style={{ transform: "translateY(20px)", height: "40px", display: "flex", justifyContent: "center", flexDirection: "column", borderTop: "1px solid white" }}>
+                    <Col style={{ display: "flex", margin: "0", height: "25px" }} span={24}>
+                        <div style={{ width: "10%", display: "flex", alignItems: "center" }}>
+                            <h3 style={{ color: "white" }}>{post.Likes}</h3>
+                            {liked === true ?
+                                <LikeFilled onClick={likePost} style={{ color: "white", fontSize: "18px", marginLeft: "6px" }} /> :
+                                <LikeOutlined onClick={likePost} style={{ color: "white", fontSize: "18px", marginLeft: "6px" }} />}
+                        </div>
+                        <div style={{ width: "10%", display: "flex", alignItems: "center" }}>
+                            <h3 style={{ color: "white" }}>{post.Dislikes}</h3>
+                            {disliked === true ?
+                                <DislikeFilled onClick={dislikePost} style={{ color: "white", fontSize: "18px", marginLeft: "6px", marginTop: "4px" }} /> :
+                                <DislikeOutlined onClick={dislikePost} style={{ color: "white", fontSize: "18px", marginLeft: "6px", marginTop: "4px" }} />}
+                        </div>
+                        <div style={{ width: "20%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <h3 style={{ color: "white" }}>Comments({post.Comments})</h3>
+                        </div>
+                    </Col>
+                </Row>
             </Form >
         </Card >
     );

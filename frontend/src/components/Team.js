@@ -47,6 +47,8 @@ export default function Team() {
         const pageJson = await posts.json();
         const json = await challenges.json();
         let challengeFormats = [], challengeDurations = {};
+        console.log("------------------");
+        console.log(json);
         if (json.response.length !== 0) {
             challengeFormats = json.response[0].slice();
             for (const challengeDuration of json.response[1])
@@ -57,9 +59,9 @@ export default function Team() {
         const jsonTeam = await responseTeam.json();
         const jsonTasks = await responseTasks.json();
         setChallengeFormats(challengeFormats);
+        setChallengeDurationFormats(challengeDurations);
         if (pageJson.response !== undefined)
             setPosts(pageJson.response);
-        setChallengeDurationFormats(challengeDurations);
         for (const key in challengeDurations) {
             if (challengeDurations[key].length !== 0) {
                 setSelectedTimeFormat(key);
@@ -69,8 +71,6 @@ export default function Team() {
         setData(jsonTeam.response);
         setTasks(jsonTasks.response);
     }
-    console.log("--------------------------")
-    console.log(data);
     async function handleInvite() {
         const response = await fetch(`${backendURLs.createInvite}/${id}`, {
             method: "POST",
@@ -133,7 +133,7 @@ export default function Team() {
     }
     if (data !== undefined && data.length > 0) {
         return (
-            <div style={{ width: "100%", height: "auto", display: "flex", minHeight: data[1][0].Count === 0 ? "100%" : "", justifyContent: "center", backgroundColor: "#383A3F" }}>
+            <div style={{ width: "100%", display: "flex", height: "auto", justifyContent: "center", backgroundColor: "#383A3F" }}>
                 <div style={{ width: "65%", display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <Card style={{ backgroundColor: "#FF6B6B", width: "85%", height: "100%", border: "none", marginTop: "20px" }}>
                         <Card.Meta
@@ -170,13 +170,14 @@ export default function Team() {
                             <Task setTasks={setTasks} props={item} index={index} />
                         ))}
                     </div>
-                    {data[1][0].Count === 1 &&
+                    {challengeFormats.length !== 0 &&
                         <PublishPost setPosts={setPosts} posterName={data[0][0].TeamName} id={id} setSelectedTimeFormat={setSelectedTimeFormat}
                             postTypes={data[2]} challengeDurationFormats={challengeDurationFormats}
-                            selectedTimeFormat={selectedTimeFormat} challengeFormats={challengeFormats} />}
+                            selectedTimeFormat={selectedTimeFormat} challengeFormats={challengeFormats} />
+                    }
                     <div style={{ marginTop: "20px" }}>
                         {posts.map((item, index) => {
-                            return <Post fixed={true} post={item} index={index} setPosts={setPosts} postTypes={data[2]} challengeFormats={challengeFormats} durationTypes={challengeDurationFormats} />
+                            return <Post fixed={true} post={item} index={index} setPosts={setPosts} />
                         })
                         }
                     </div>

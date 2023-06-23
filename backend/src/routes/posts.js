@@ -213,7 +213,8 @@ BEGIN TRY
                         (
                             SELECT COUNT(*)
                             FROM Posters p
-                            JOIN OrientationPostTypes opt ON opt.PostType = @postType AND opt.Orientation = p.PosterType
+                              JOIN OrientationPostTypes opt
+                              ON opt.PostType = @postType AND opt.Orientation = p.PosterType
                             WHERE PosterId = @posterId
                         ) = 1
                         AND
@@ -243,8 +244,10 @@ BEGIN TRY
                             (
                                 (
                                     SELECT COUNT(*)
-                                    FROM ChallengeTimeLengthsDurationTypes ctldt
-                                    WHERE ctldt.ChallengeDurationType = 'First to score' AND ctldt.ChallengeTimeLength = @durationLength
+                                    FROM ChallengeDurationTypes cdt
+                                      LEFT JOIN ChallengeTimeLengthsDurationTypes ctldt
+                                      ON ctldt.ChallengeDurationType = cdt.ChallengeDurationType
+                                    WHERE ctldt.ChallengeTimeLength IS NULL AND cdt.ChallengeDurationType = @durationType
                                 ) = 1
                                 AND (ISNUMERIC(@durationLength) = 1 AND FLOOR(CAST(@durationLength AS FLOAT)) = CAST(@durationLength AS FLOAT))
                             )
@@ -264,7 +267,7 @@ BEGIN TRY
                 INSERT INTO Challenges(ChallengeId, ChallengeFormat, DurationType, DurationLength)
                 VALUES (@PostId, @format, @durationType, @durationLength); 
 
-                SELECT p.*, c.*, u.Username, t.TeamName, 1 AS CanModify
+                SELECT p.*, c.*, u.Username, t.TeamName, 1 AS CanModify, 0 AS Likes, 0 AS Dislikes, NULL AS LikingStatus, 0 AS Comments
                 FROM Posts p
                 LEFT JOIN Challenges c ON c.ChallengeId = p.PostId
                 LEFT JOIN Users u ON p.PosterId = u.UserId
@@ -278,7 +281,7 @@ BEGIN TRY
             VALUES (@posterId, @content, GETDATE(), @isPublic, @postType);
 
             DECLARE @PostId2 BIGINT = (SELECT MAX(PostId) FROM Posts);
-            SELECT p.*, c.*, u.Username, t.TeamName, 1 AS CanModify
+            SELECT p.*, c.*, u.Username, t.TeamName, 1 AS CanModify, 0 AS Likes, 0 AS Comments, 0 AS Dislikes, NULL AS LikingStatus
             FROM Posts p
             LEFT JOIN Challenges c ON c.ChallengeId = p.PostId
             LEFT JOIN Users u ON p.PosterId = u.UserId
@@ -404,7 +407,12 @@ router.get("/", async (req, res) => {
                        DECLARE @type VARCHAR(30);
                        SET @type = CASE WHEN @postType = 'All' THEN '%%' ELSE @postType END;
 
-                       SELECT p.*, c.*, u.Username, t.TeamName, CASE WHEN (p.PosterId = @userId OR EXISTS(SELECT TeamId FROM UsersTeams WHERE TeamId = p.PosterId AND UserId = @userId)) THEN 1 ELSE 0 END AS CanModify
+                       SELECT p.*, c.*, u.Username, t.TeamName,
+                        CASE WHEN (p.PosterId = @userId OR EXISTS(SELECT TeamId FROM Teams WHERE TeamId = p.PosterId AND UserId = @userId)) THEN 1 ELSE 0 END AS CanModify,
+                        (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 1) AS Likes,
+                          (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 0) AS Dislikes,
+                          (SELECT State FROM Likes l WHERE PostId = p.PostId AND UserId = @userId) AS LikingStatus,
+                          (SELECT COUNT(*) FROM Comments WHERE PostId = p.PostId) AS Comments
                        FROM Posts p
                           LEFT JOIN Challenges c 
                           ON c.ChallengeId = p.PostId
@@ -466,7 +474,12 @@ router.get("/:id", async (req, res) => {
                                                ((@posterId = @userId) OR 
                                                (SELECT COUNT(*) FROM UsersTeams WHERE TeamId = @posterId AND UserId = @userId) = 1)
                                               THEN 1 ELSE 0 END;
-                         SELECT p.*, c.*, u.Username, t.TeamName, CASE WHEN (p.PosterId = @userId OR EXISTS(SELECT TeamId FROM UsersTeams WHERE TeamId = @posterId AND UserId = @userId)) THEN 1 ELSE 0 END AS CanModify
+                         SELECT p.*, c.*, u.Username, t.TeamName,
+                          CASE WHEN (p.PosterId = @userId OR EXISTS(SELECT TeamId FROM Teams WHERE TeamId = @posterId AND UserId = @userId)) THEN 1 ELSE 0 END AS CanModify,
+                          (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 1) AS Likes,
+                          (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 0) AS Dislikes,
+                          (SELECT State FROM Likes l WHERE PostId = p.PostId AND UserId = @userId) AS LikingStatus,
+                          (SELECT COUNT(*) FROM Comments WHERE PostId = p.PostId) AS Comments
                          FROM Posts p
                            LEFT JOIN Challenges c
                            ON c.ChallengeId = p.PostId

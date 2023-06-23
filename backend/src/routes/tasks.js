@@ -204,7 +204,7 @@ router.get("/mytasks/:token", (req, res) => {
                        FROM Tasks ta
                          JOIN Teams te
                          ON te.TeamId = ta.TeamId
-                       WHERE ta.UserId = @userId`;
+                       WHERE ta.UserId = @userId;`;
         request.query(QUERY, (err, result) => {
             if (err) {
                 res.status(500).json({ message: "Something went wrong in our part." });

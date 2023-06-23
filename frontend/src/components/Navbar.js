@@ -2,7 +2,7 @@ import "../styles/navbar.css";
 import { Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { Badge, Input, Button } from "antd";
-import { BellOutlined, PlusOutlined, LoginOutlined, TeamOutlined } from "@ant-design/icons";
+import { BellOutlined, PlusOutlined, LoginOutlined, TeamOutlined, HomeOutlined } from "@ant-design/icons";
 import backendURLs from "../backendURLs";
 
 export default function Navbar() {
@@ -59,6 +59,9 @@ export default function Navbar() {
                 </Link>
                 <Link className="navbar-option" to="/myteams">
                     <TeamOutlined className="center" />
+                </Link>
+                <Link className="navbar-option" to="/">
+                    <HomeOutlined className="center" />
                 </Link>
                 <Input ref={inviteCode} className="navbar-input" placeholder="Invitation code" />
                 <Button className="navbar-button" type="primary" onClick={joinTeam}>JOIN TEAM</Button>

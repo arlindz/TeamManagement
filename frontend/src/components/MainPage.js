@@ -99,8 +99,10 @@ export default function MainPage() {
                     })}
                 </Select>
             </div >
-            <PublishPost setPosts={setPosts} posterName={localStorage.getItem('username')} id={localStorage.getItem('userId')} postTypes={postTypes} />
-            <div style={{ width: "100%", height: "auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                <PublishPost setPosts={setPosts} posterName={localStorage.getItem('username')} id={localStorage.getItem('userId')} postTypes={postTypes} />
+            </div>
+            <div style={{ width: "100%", height: "auto", display: "flex", flexDirection: "column", alignItems: "center", marginTop: "5%" }}>
                 {posts !== undefined && posts.map((item, index) => {
                     return <Post fixed={false} post={item} index={index} setPosts={setPosts} postTypes={postTypes} posterName={item.Username === null ? item.TeamName : item.Username} />
                 })}
