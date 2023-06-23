@@ -91,6 +91,64 @@ router.get('/orientations', (req, res) => {
         });
     });
 });
+router.post('/showInterest/:id', (req, res) => {
+    const token = req.headers['auth'];
+    let userId = null, isValid = false;
+    const teamId = req.params.id;
+    jwt.verify(token, tokenKey, (err, decoded) => {
+        if (err) {
+            res.status(401).json({ message: "Token is invalid" });
+            return;
+        }
+        if (Date.now() / 1000 > decoded.exp) {
+            res.status(401).json({ message: "Token is invalid" });
+            return;
+        }
+        isValid = true;
+        userId = decoded.userId;
+    });
+    if (!isValid) return;
+    sql.connect(config, (err) => {
+        if (err) {
+            res.status(500).json({ message: "An error happened on our side." });
+            return;
+        }
+        const request = new sql.Request();
+        const challengerId = req.params.id;
+        const interestedChallengerId = req.body.interestedChallengerId;
+        request.input('challengerId', sql.BigInt, challengerId);
+        request.input('interestedChallengerId', sql.BigInt, interestedChallengerId);
+        const QUERY = `BEGIN TRANSACTION
+                        BEGIN TRY
+                          DECLARE @CanShowInterest BIT;
+                          SET @CanShowInterest = 
+                          CASE WHEN
+                             ((SELECT Orientation FROM Teams WHERE TeamId = @challengerId) = (SELECT Orientation FROM Teams WHERE TeamId = @interestedChallengerId)) THEN 1 ELSE 0 END;
+                           
+                          IF(@CanShowInterest = 1)
+                          BEGIN
+                           INSERT INTO InterestedChallengers (ChallengerId, InterestedChallengerId) VALUES (@challengerId, @interestedChallengerId);
+                          END
+                        END TRY
+                        BEGIN CATCH
+                          THROW;
+                          ROLLBACK;
+                        END CATCH;
+                       COMMIT`;
+        request.query(QUERY, (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).json({ message: "An error happened on our side." });
+                return;
+            }
+            if (result.rowsAffected <= 0) {
+                res.status(409).json({ message: "You already showed interest in this challenge for that team." });
+                return;
+            }
+            res.status(201).json({ message: "Successfully created resource." });
+        });
+    });
+})
 router.get("/:id", (req, res) => {
     const token = req.headers['auth'];
     let userId = null, isValid = false;

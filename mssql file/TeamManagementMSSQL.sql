@@ -225,6 +225,15 @@ CREATE TABLE TeamInvitations(
   Expires BIGINT NOT NULL,
   FOREIGN KEY (TeamId) REFERENCES Teams(TeamId) ON DELETE CASCADE ON UPDATE CASCADE
 )
+CREATE TABLE ChallengeInterests(
+   ChallengerId BIGINT NOT NULL,
+   InterestedChallangerId BIGINT NOT NULL,
+   PRIMARY KEY (ChallengerId, InterestedChallengerId),
+   FOREIGN KEY(ChallengerId) REFERENCES Teams(TeamId),
+   FOREIGN KEY(InterestedChallengerId) REFERENCES Teams(TeamId)
+);
+CREATE NONCLUSTERED INDEX IX_ChallengeInterests_ChallengerId ON ChallengeInterests(ChallengerId);
+
 
 CREATE TABLE Tasks(
   TaskId BIGINT IDENTITY(1,1) PRIMARY KEY,

@@ -19,6 +19,7 @@ export default function Team() {
     const [challengeFormats, setChallengeFormats] = useState([]);
     const [challengeDurationFormats, setChallengeDurationFormats] = useState({});
     const [selectedTimeFormat, setSelectedTimeFormat] = useState("");
+    const [userTeams, setUserTeams] = useState([]);
     useEffect(() => {
         setComponents();
     }, []);
@@ -36,6 +37,12 @@ export default function Team() {
                 'auth': localStorage.getItem('token')
             }
         });
+        const userTeams = await fetch(`http://localhost:5000/team`, {
+            method: "GET",
+            headers: {
+                'auth': localStorage.getItem('token')
+            }
+        });
         const posts = await fetch(`http://localhost:5000/post/${id}`, {
             method: "GET",
             headers: {
@@ -44,9 +51,12 @@ export default function Team() {
                 'page': 1
             }
         });
+        const teamJson = await userTeams.json();
         const pageJson = await posts.json();
         const json = await challenges.json();
-        let challengeFormats = [], challengeDurations = {};
+        let challengeFormats = [], challengeDurations = {}, userTeamsObj = {};
+        for (const element of teamJson.response)
+            userTeamsObj[element.TeamId] = { teamName: element.TeamName, teamOrientation: element.Orientation };
         console.log("------------------");
         console.log(json);
         if (json.response.length !== 0) {
@@ -58,7 +68,9 @@ export default function Team() {
         }
         const jsonTeam = await responseTeam.json();
         const jsonTasks = await responseTasks.json();
+        console.log(userTeamsObj)
         setChallengeFormats(challengeFormats);
+        setUserTeams(userTeamsObj);
         setChallengeDurationFormats(challengeDurations);
         if (pageJson.response !== undefined)
             setPosts(pageJson.response);
@@ -177,7 +189,9 @@ export default function Team() {
                     }
                     <div style={{ marginTop: "20px" }}>
                         {posts.map((item, index) => {
-                            return <Post fixed={true} post={item} index={index} setPosts={setPosts} />
+                            return <Post fixed={true} post={item} index={index} setPosts={setPosts}
+                                postTypes={data[2]} posterName={item} durationTypes={challengeDurationFormats} userTeams={userTeams}
+                                challengeFormats={challengeFormats} />
                         })
                         }
                     </div>

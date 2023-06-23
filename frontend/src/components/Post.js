@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Typography, Row, Col, Form, Select, InputNumber, Input, Button } from 'antd';
 import {
     MessageOutlined, ThunderboltOutlined, DeleteOutlined,
@@ -9,7 +9,7 @@ import {
 const { Option } = Select;
 const { Title, Text } = Typography;
 
-const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, challengeFormats, fixed }) => {
+const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, challengeFormats, fixed, userTeams }) => {
     const postTypeIcons = {
         Post: <MessageOutlined style={{ marginLeft: "5px" }} />,
         Challenge: <ThunderboltOutlined style={{ marginLeft: "5px" }} />
@@ -25,6 +25,41 @@ const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, cha
     const [durationLength, setDurationLength] = useState(post.DurationLength === null ? durationTypes === undefined ? "" : durationTypes[selectedDurationType][0] : post.DurationLength);
     const [liked, setLiked] = useState(post.LikingStatus === null ? false : post.LikingStatus);
     const [disliked, setDisliked] = useState(post.LikingStatus === null ? false : !post.LikingStatus);
+    const [teamsOfUser, setTeamsOfUser] = useState({});
+    const [selectedTeam, setSelectedTeam] = useState("");
+    useEffect(() => {
+        try {
+            const aux = Object.assign({}, userTeams);
+            for (const key in aux) {
+                console.log("Checking at " + key)
+                console.log(aux[key]);
+                console.log("against");
+                console.log(post.PosterId + "," + post.Orientation);
+                if (key == post.PosterId || aux[key].teamOrientation != post.Orientation) delete aux[key];
+            }
+            setTeamsOfUser(aux);
+            setSelectedTeam(Object.keys(aux).length > 0 ? Object.keys(aux)[0] : "");
+        } catch (error) {
+            console.log(error);
+        }
+    }, []);
+    async function showInterest() {
+        try {
+            const repsonse = await fetch(`http://localhost:5000/challenges/showInterest/${post.PostId}`, {
+                method: "POST",
+                headers: {
+                    'auth': localStorage.getItem('token'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    teamId: selectedTeam
+                })
+            });
+            if (repsonse.status !== 201) return;
+        } catch (error) {
+            console.log(error);
+        }
+    }
     async function deletePost() {
         try {
             const response = await fetch(`http://localhost:5000/post/${post.PostId}`, {
@@ -299,7 +334,7 @@ const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, cha
                         </Col>
                     </Row>)
                 }
-                <Row style={{ transform: "translateY(20px)", height: "40px", display: "flex", justifyContent: "center", flexDirection: "column", borderTop: "1px solid white" }}>
+                <Row style={{ marginTop: "20px", height: "40px", display: "flex", justifyContent: "center", flexDirection: "column", borderTop: "1px solid white" }}>
                     <Col style={{ display: "flex", margin: "0", height: "25px" }} span={24}>
                         <div style={{ width: "10%", display: "flex", alignItems: "center" }}>
                             <h3 style={{ color: "white" }}>{post.Likes}</h3>
@@ -318,6 +353,30 @@ const Post = ({ posterName, post, index, setPosts, postTypes, durationTypes, cha
                         </div>
                     </Col>
                 </Row>
+                {post.PostType === "Challenges" &&
+                    <Row style={{ marginTop: "3%" }}>
+                        <Col span={40}>
+                            {Object.keys(teamsOfUser).length > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <Button onClick={showInterest} style={{ backgroundColor: "#ff6b6b", color: "white" }} type="default">
+                                        Show interest
+                                    </Button>
+                                    <span style={{ margin: '0 8px', fontSize: '12px' }}>as</span>
+                                    <Select
+                                        value={teamsOfUser[selectedTeam].teamName}
+                                        style={{ width: 'auto', fontSize: '8px' }}
+                                        onChange={(val) => setSelectedTeam(val)}
+                                    >
+                                        {Object.keys(teamsOfUser).map((teamId) => (
+                                            <Option key={teamId} value={teamId}>
+                                                {teamsOfUser[teamId].teamName}
+                                            </Option>
+                                        ))}
+                                    </Select>
+                                </div>
+                            )}</Col>
+                    </Row>
+                }
             </Form >
         </Card >
     );

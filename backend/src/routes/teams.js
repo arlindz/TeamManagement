@@ -272,7 +272,44 @@ router.delete("/leave/:id", (req, res) => {
         });
     });
 });
+router.get("/", (req, res) => {
+    const token = req.headers['auth'];
+    let userId = null, isValid = false;
+    jwt.verify(token, tokenKey, (err, decoded) => {
+        if (err) {
+            res.status(401).json({ message: "Token is invalid" });
+            return;
+        }
+        if (Date.now() / 1000 > decoded.exp) {
+            res.status(401).json({ message: "Token is invalid" });
+            return;
+        }
+        isValid = true;
+        userId = decoded.userId;
+    });
+    if (!isValid) return;
+    sql.connect(config, (err) => {
+        if (err) {
+            res.status(500).json({ message: "Something went wrong in our part." });
+            return;
+        }
+        const request = new sql.Request();
+        request.input('UserId', sql.BigInt, userId);
+        const QUERY = `SELECT TeamId, TeamName, Orientation
+                       FROM Teams t
+                       WHERE UserId = @UserId;`;
 
+        request.query(QUERY, (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).json({ message: "Something went wrong on our side." });
+                return;
+            }
+            res.status(200).json({ message: "Successfully fetched resource.", response: result.recordset });
+        });
+
+    });
+});
 router.get("/:id/:token", (req, res) => {
     const token = req.params.token;
     let userId = null, isValid = false;

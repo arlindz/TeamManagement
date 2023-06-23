@@ -3,6 +3,7 @@ import PublishPost from "./PublishPost";
 import Post from "./Post";
 import { useState, useEffect } from "react";
 import { Input, Button, Select } from 'antd';
+import { set } from "mongoose";
 const { Option } = Select;
 const { Search } = Input;
 export default function MainPage() {
@@ -12,6 +13,7 @@ export default function MainPage() {
     const [selectedOrientation, setSelectedOrientation] = useState("");
     const [searchString, setSearchString] = useState("");
     const [selectedPostType, setSelectedPostType] = useState(orientations[selectedOrientation] === undefined ? "" : orientations[selectedOrientation][0]);
+    const [userTeams, setUserTeams] = useState([]);
     async function search() {
         try {
             const posts = await fetch(`http://localhost:5000/post`, {
@@ -26,6 +28,7 @@ export default function MainPage() {
                 }
             })
             const json = await posts.json();
+
             setPosts(json.response);
         } catch (e) {
             console.log(e);
@@ -33,6 +36,12 @@ export default function MainPage() {
     }
     async function setComponents() {
         try {
+            const userTeams = await fetch(`http://localhost:5000/team`, {
+                method: "GET",
+                headers: {
+                    'auth': localStorage.getItem('token')
+                }
+            });
             const challenges = await fetch(`http://localhost:5000/challenges/postTypes/${localStorage.getItem('userId')}`, {
                 method: "GET",
                 headers: {
@@ -56,6 +65,7 @@ export default function MainPage() {
                     'auth': localStorage.getItem('token'),
                 }
             });
+            const userTeamsJson = await userTeams.json();
             const challengeJson = await challenges.json();
             const orientationsJson = await orientations.json();
             const postsJson = await posts.json();
@@ -67,6 +77,7 @@ export default function MainPage() {
             setPosts(postsJson.response);
             setPostTypes(challengeJson.response);
             setOrientations(obj);
+            setUserTeams(userTeamsJson.response);
             setSelectedOrientation(Object.keys(obj)[0]);
             setSelectedPostType(obj[Object.keys(obj)[0]][0]);
         } catch (error) {
@@ -104,7 +115,7 @@ export default function MainPage() {
             </div>
             <div style={{ width: "100%", height: "auto", display: "flex", flexDirection: "column", alignItems: "center", marginTop: "5%" }}>
                 {posts !== undefined && posts.map((item, index) => {
-                    return <Post fixed={false} post={item} index={index} setPosts={setPosts} postTypes={postTypes} posterName={item.Username === null ? item.TeamName : item.Username} />
+                    return <Post userTeams={userTeams} fixed={false} post={item} index={index} setPosts={setPosts} postTypes={postTypes} posterName={item.Username === null ? item.TeamName : item.Username} />
                 })}
                 <Button type="default" style={{ marginBottom: "2%" }}>
                     See More

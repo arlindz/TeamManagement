@@ -281,7 +281,7 @@ BEGIN TRY
             VALUES (@posterId, @content, GETDATE(), @isPublic, @postType);
 
             DECLARE @PostId2 BIGINT = (SELECT MAX(PostId) FROM Posts);
-            SELECT p.*, c.*, u.Username, t.TeamName, 1 AS CanModify, 0 AS Likes, 0 AS Comments, 0 AS Dislikes, NULL AS LikingStatus
+            SELECT p.*, c.*, u.Username, t.TeamName, 1 AS CanModify, 0 AS Likes, 0 AS Comments, 0 AS Dislikes, NULL AS LikingStatus, t.Orientation AS Orientation
             FROM Posts p
             LEFT JOIN Challenges c ON c.ChallengeId = p.PostId
             LEFT JOIN Users u ON p.PosterId = u.UserId
@@ -412,7 +412,8 @@ router.get("/", async (req, res) => {
                         (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 1) AS Likes,
                           (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 0) AS Dislikes,
                           (SELECT State FROM Likes l WHERE PostId = p.PostId AND UserId = @userId) AS LikingStatus,
-                          (SELECT COUNT(*) FROM Comments WHERE PostId = p.PostId) AS Comments
+                          (SELECT COUNT(*) FROM Comments WHERE PostId = p.PostId) AS Comments,
+                          t.Orientation AS Orientation
                        FROM Posts p
                           LEFT JOIN Challenges c 
                           ON c.ChallengeId = p.PostId
@@ -479,7 +480,8 @@ router.get("/:id", async (req, res) => {
                           (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 1) AS Likes,
                           (SELECT COUNT(*) FROM Likes WHERE PostId = p.PostId AND State = 0) AS Dislikes,
                           (SELECT State FROM Likes l WHERE PostId = p.PostId AND UserId = @userId) AS LikingStatus,
-                          (SELECT COUNT(*) FROM Comments WHERE PostId = p.PostId) AS Comments
+                          (SELECT COUNT(*) FROM Comments WHERE PostId = p.PostId) AS Comments,
+                          t.Orientation AS Orientation
                          FROM Posts p
                            LEFT JOIN Challenges c
                            ON c.ChallengeId = p.PostId
